@@ -92,6 +92,16 @@ function s.remove(e, t)
 			m:del(s[".name"], "fallback_node")
 		end
 	end)
+	m.uci:foreach(appname, "subscribe_list", function(s)
+		if s["preproxy_node"] == t then
+			m:del(s[".name"], "preproxy_node")
+			m:del(s[".name"], "chain_proxy")
+		end
+		if s["to_node"] == t then
+			m:del(s[".name"], "to_node")
+			m:del(s[".name"], "chain_proxy")
+		end
+	end)
 	if (m:get(t, "add_mode") or "0") == "2" then
 		local add_from = m:get(t, "add_from") or ""
 		if add_from ~= "" then
@@ -164,6 +174,8 @@ o.cfgvalue = function(t, n)
 			protocol = "HY2"
 		elseif protocol == "anytls" then
 			protocol = "AnyTLS"
+		elseif protocol == "ssh" then
+			protocol = "SSH"
 		else
 			protocol = protocol:gsub("^%l",string.upper)
 		end
@@ -172,18 +184,20 @@ o.cfgvalue = function(t, n)
 	end
 	local address = m:get(n, "address") or ""
 	local port = m:get(n, "port") or ""
+	local port_s = (port ~= "") and port or m:get(n, "hysteria_hop") or m:get(n, "hysteria2_hop") or ""
 	str = str .. translate(type) .. "：" .. remarks
-	if address ~= "" and port ~= "" then
+	if address ~= "" and port_s ~= "" then
+		port_s = port_s:gsub(":", "-")
 		if show_node_info == "1" then
 			if datatypes.ip6addr(address) then
-				str = str .. string.format("（[%s]:%s）", address, port)
+				str = str .. string.format("（[%s]:%s）", address, port_s)
 			else
-				str = str .. string.format("（%s:%s）", address, port)
+				str = str .. string.format("（%s:%s）", address, port_s)
 			end
 		end
-		str = str .. string.format("<input type='hidden' id='cbid.%s.%s.address' value='%s'/>", appname, n, address)
-		str = str .. string.format("<input type='hidden' id='cbid.%s.%s.port' value='%s'/>", appname, n, port)
 	end
+	str = str .. string.format("<input type='hidden' id='cbid.%s.%s.address' value='%s'/>", appname, n, address)
+	str = str .. string.format("<input type='hidden' id='cbid.%s.%s.port' value='%s'/>", appname, n, port)
 	return str
 end
 
